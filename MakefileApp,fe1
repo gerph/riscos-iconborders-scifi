@@ -1,49 +1,48 @@
-# Makefile for IconBorderExample test
+#!/usr/bin/env riscos-amu -f
+# Makefile for IconBorderSciFi
 #
 
-COMPONENT  = IconBorderExample
+#
+# Program specific options:
+#
+COMPONENT  = IconBorderSciFi
+
+# Specifies additional targets for startup
+#INITTARGET = inittarget
+
+# Specifies additional targets for clean
+#CLEANTARGET = cleantarget
+
+# aif, for linked objects
+# aof, for a partially linked AOF object
+# util, for utilities built with objasm
+# basic, for BASIC tools
 TYPE       = aif
-INCLUDES   = 
-LIBS       = ${CLIB}
+
+# The file to output (defaults ${COMPONENT})
+#TARGET = <filename>
+
+# Comma-separated list of paths to use for includes, such as:
+#	C:LibName.
+INCLUDES   =
+
+# Space separated list of defines to set, eg -DDEBUG
 CDEFINES   = -DTEST
+
+# Space separated list of libraries to link against, eg C:LibName.o.libLibName
+LIBS       = ${CLIB}
+
+# Objects to build, using the format o.<name> (will be varied for build type)
 OBJS       = o.borders \
              o.graphics \
-             o.testborders
+             o.testborders \
 
-# (from Env:Makefiles.LibraryCommand)
-TARGET   = ${COMPONENT}
-INCLUDES = -IC:
-CLIB     = C:o.stubsg
-LD      = link
-CC      = cc
-MKDIR   = cdir
-CMHG    = cmunge
-WIPE    = -wipe
-APCS        = -apcs 3/32
-CMHGFLAGS   = ${THROWBACK} ${APCS} -p -DCMHG ${INCLUDES}
-CFLAGS      = ${THROWBACK} ${APCS} -c -depend !Depend -Wc -fa ${CDEFINES} ${INCLUDES}
-CFLAGS_ZM   = ${CFLAGS} ${APCS} -zM -zps1
-WFLAGS      = ~c~v
-LDFLAGS     = -aif
+# Space separated list of XML files for building documentation.
+#DOCSRC = <prm-in-xml-sources>
 
-#
-# Rule patterns
-#
-.SUFFIXES: .o .aif .util .s .c
-.c.o:;    ${CC} ${CFLAGS} -o $@ $<
-.aif.o:;  ${LD} ${LDFLAGS} -o $@ $<
-          ${SQUEEZE} $@
 
-# everything
-all: ${TYPE}.${TARGET}
-        @echo ${COMPONENT}: All built (Disc)
+include LibraryCommand
 
-${TYPE}.${TARGET}: ${OBJS} ${CLIB}
-          ${LD} -aif -o aif.${TARGET} ${OBJS} ${LIBS}
-
-.INIT:
-        ${MKDIR} o
-        ${MKDIR} aif
 
 #---------------------------------------------------------------------------
 # Dynamic dependencies:

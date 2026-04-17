@@ -1,68 +1,72 @@
-# Makefile for IconBorderExample
+#!/usr/bin/env riscos-amu -f
+# Makefile for IconBorderSciFi
 #
 
 #
 # Program specific options:
 #
-COMPONENT  = IconBorderExample
+COMPONENT  = IconBorderSciFi
+
+# Specifies additional targets for startup
+INITTARGET = inittarget
+
+# Specifies additional targets for clean
 CLEANTARGET = cleantarget
-EXPORTS    = 
-LIBS       = 
-CDEFINES   = 
-OBJS       = \
-             oz.borders \
-             oz.veneer \
-             oz.graphics \
-             oz.header
 
-# (from Env:Makefiles.CModule)
-RAM_MODULE = rm.${COMPONENT}
-INCLUDES   = -IC:
-CLIB         = C:o.stubsg
-# CLIB = C:o.stubsg
-LD      = link
-CC      = cc
-RM      = remove
-MKDIR   = cdir
-CMHG    = cmunge
-WIPE    = -wipe
+# Files to export as part of export_hdr or export_libs
+# To export to the standard C: path, you might use an export like:
+#   ${EXP_C_H}.${COMPONENT}SWIs
+# To export to the library in a subdirectory, use an export like:
+#   ${EXP_LIB}.${COMPONENT}.h.myheader
+#EXPORTS    = ${EXP_C_H}.${COMPONENT}SWIs
 
-APCS        = -apcs 3/32
-CMHGFLAGS   = ${THROWBACK} ${APCS} -p -DCMHG ${INCLUDES}
-CFLAGS      = ${THROWBACK} ${APCS} -c -depend !Depend -Wc -fa ${CDEFINES} ${INCLUDES}
-CFLAGS_ZM   = ${CFLAGS} ${APCS} -zM -zps1
-WFLAGS      = ~c~v
+# Resources you want to be exported as part of the 'resources' phase of the build
+#RESOURCES  = ${RESDIR}.${COMPONENT}.Messages
 
-#
-# Rule patterns:
-#
-.SUFFIXES: .o .oz .rm .aof .s .c .cmhg
-.c.oz:;    ${CC} ${CFLAGS_ZM} -o $@ $<
-.cmhg.oz:; ${CMHG} $(CMHGFLAGS) -o $@ $<
-.cmhg.h:;  ${CMHG} $(CMHGFLAGS) -d $@ $<
+# Comma-separated list of paths to use for includes, such as:
+#	C:LibName.
+INCLUDES   =
 
-ram: ${RAM_MODULE}
-        @echo ${COMPONENT}: Module built (RAM)
+# Space separated list of libraries to link against, eg C:LibName.o.libLibName
+# (${CLIB} is implicit, unless NOCLIB = yes)
+LIBS       =
 
-clean: ${CLEANTARGET}
-        ${WIPE} o.* ${WFLAGS}
-        ${WIPE} oz.* ${WFLAGS}
-        ${WIPE} rm.* ${WFLAGS}
-        ${RM} h.header
-        @echo ${COMPONENT}: cleaned
+# Space separated list of defines to set, eg -DDEBUG
+CDEFINES   =
 
-${RAM_MODULE}: ${OBJS} ${CLIB} ${LIBS}
-        ${LD} -rmf ${LDFLAGS} -o $@ ${OBJS} ${CLIB} ${LIBS}
+# Objects to build, using the format o.<name> (will be varied for build type)
+OBJS       = o.borders \
+             o.graphics \
+             o.header \
+             o.veneer \
 
-.INIT:
-        ${MKDIR} oz
-        ${MKDIR} rm
+
+# By default we don't build Fortify in.
+# To include fortify in your module, #include "fortify.h" at the top of your C files
+# and call Fortify_EnterScope in your initialisation, and Fortify_LeaveScope in the
+# finalisation.
+FORTIFY    = no
+
+include CModule
+
+# Additional dependencies
+$(OZDIR).veneer: h.header
+
+# Export rules
+# For any files you export with EXPORTS you may need to include an
+# export rule
+${EXP_C_H}.${COMPONENT}SWIs: cmhg.header
+       ${CMHG} ${CMHGFLAGS} -xh $@ cmhg.header
+# To export bare files you can use the ${CP} command:
+# ${EXP_LIB}.${COMPONENT}.h.myheader: h.myheader
+#        ${CP} $?  $@  ${CPFLAGS}
 
 cleantarget:
-       ${RM} h.header
-
-# additional dependencies
-oz.veneer: h.header
+           ${DESTROY} h.modhead
+# This clean target removes any module header file that was built.
+inittarget:
+           ${MKDIR} h
+# This init target ensures that the header directory is created
 
 #---------------------------------------------------------------------------
 # Dynamic dependencies:

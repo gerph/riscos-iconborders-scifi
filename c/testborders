@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "graphics.h"
 #include "borders.h"
 #include "swis.h"
 
@@ -28,6 +29,13 @@ int heights[] = {
     52+16,  // writeable
 };
 
+char *alt_labels[] = {
+    "none",
+    "selected",
+    "highlight",
+    "sel+high"
+};
+
 /* Dithering flags */
 int dither = DITHER_BACKGROUND;
 
@@ -36,18 +44,27 @@ int main(int argc, char *argv[])
   int i;
   int alt;
   int wait_at_end = 1;
+  int save_at_end = 0;
+
+  _swix(OS_WriteI+22, 0);
+  _swix(OS_WriteI+28, 0); /* Mode 28 */
 
   if (argc == 2 && strcmp(argv[1], "-quit")==0)
     wait_at_end = 0;
+  if (argc == 2 && strcmp(argv[1], "-save")==0)
+  { save_at_end = 1; wait_at_end = 0; }
+  if (argc == 2 && strcmp(argv[1], "-save-native")==0)
+  { save_at_end = 2; wait_at_end = 0; }
 
   printf("Plotting...\n");
 
   /* We draw each of the buttons, going up the screen, and beside them
      we draw button with the 'selected' bit set, forcing the button to
-     be pressed. The only buttons this has an effect for should be types
-     5 and 6 (action and default). */
+     be pressed, and then again with the 'deleted' bit set, forcing
+     the button to be highlighted. The only buttons this has an effect
+     for should be types 5 and 6 (action and default). */
 
-  for (alt=0; alt<2; alt++)
+  for (alt=0; alt<4; alt++)
   {
     for (i=1; i<=7; i++)
     {
@@ -55,6 +72,11 @@ int main(int argc, char *argv[])
       colours_t cols[6];
       bbox_t fillbox;
       bbox_t box;
+      unsigned long flags;
+
+      int selected = (alt & 1);
+      int highlighted = (alt & 2);
+
       cols[COLOUR_FG]  =0x00000000;
       cols[COLOUR_BG]  =(i==7) ? 0xFFFFFF00 : 0xDDDDDD00;
       cols[COLOUR_WELL]=(i==6) ? 0xBAEEEE00 : 0xDDDDDD00;
@@ -72,18 +94,46 @@ int main(int argc, char *argv[])
       fillbox=box;
 
       /* Grey background to see our buttons against */
-      _swix(ColourTrans_SetGCOL,_IN(0)|_INR(3,4),0xDDDDDD00,0,0);
+      gcol(0xDDDDDD00);
       _swix(OS_Plot,_INR(0,2),4,   box.x0-16,box.y0-16);
       _swix(OS_Plot,_INR(0,2),96+5,box.x1+16,box.y1+16);
 
-      border_colour(i, alt==1 ? (1<<21) : 0, &fillbox, cols, 0xDDDDDD00);
+      flags = 0;
+      if (selected)
+        flags |= (1<<21);
+      if (highlighted)
+        flags |= (1<<23);
+
+      border_colour(i, flags, &fillbox, cols, 0xDDDDDD00);
       _swix(ColourTrans_SetGCOL,_IN(0)|_INR(3,4),
                     cols[COLOUR_BG],
                     (1<<7) | ((dither & DITHER_BACKGROUND) ? (1<<8) : 0),
                     0);
-      border_fill(i, alt==1 ? (1<<21) : 0, &fillbox, cols, dither);
-      border_draw(i, alt==1 ? (1<<21) : 0, &box, cols, dither);
+      border_fill(i, flags, &fillbox, cols, dither);
+      border_draw(i, flags, &box, cols, dither);
     }
+
+    /* Let's put a label below each of the columns */
+    {
+        int x0 = X0 + alt*(WIDTH+32);
+        int y0 = Y0 - 24 - 32;
+        _swix(0x105, 0); /* Text at graphics cursor */
+        gcol(0xFFFFFF00); /* White text */
+
+        _swix(OS_Plot,_INR(0,2),4, x0, y0);
+        printf("%s", alt_labels[alt]);
+        _swix(0x104, 0); /* Text at text cursor */
+    }
+  }
+
+  if (save_at_end)
+  {
+    _kernel_oserror *err;
+    printf("Saving...\n");
+    if (save_at_end == 1)
+        _kernel_oscli("ScreenSave Screen");
+    else
+        _kernel_oscli("ScreenSave -native Screen");
   }
 
   if (wait_at_end)
