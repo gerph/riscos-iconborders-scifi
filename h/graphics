@@ -58,7 +58,7 @@ void rect(int x0,int y0,int x1,int y1);
 void rect_bg(int x0,int y0,int x1,int y1);
 
 /*************************************************** Gerph *********
- Function:     sector
+ Function:     sector_bg
  Description:  Filled sector
  Parameters:   x0,y0 = centre
                x1,y1 = first point
@@ -66,5 +66,24 @@ void rect_bg(int x0,int y0,int x1,int y1);
  Returns:      none
  ******************************************************************/
 void sector_bg(int x0,int y0,int x1,int y1,int x2,int y2);
+
+/*************************************************** Gerph *********
+ Function:     sector
+ Description:  Filled sector
+ Parameters:   x0,y0 = centre
+               x1,y1 = first point
+               x2,y2 = second point
+ Returns:      none
+ ******************************************************************/
+void sector(int x0,int y0,int x1,int y1,int x2,int y2);
+
+/*************************************************** Gerph *********
+ Function:     circle
+ Description:  Filled circle
+ Parameters:   x0,y0 = centre
+               r = radius
+ Returns:      none
+ ******************************************************************/
+void circle(int x, int y, int r);
 
 #endif

@@ -21,7 +21,8 @@ static enum {
   s_dead    /* We cannot be exited because something went wrong */
 } State = s_idle;
 
-static const char *filtername = "Example";
+static const char *filtername = "Fob borders";
+
 
 /*************************************************** Gerph *********
  Function:     Register_Filters
@@ -117,7 +118,7 @@ _kernel_oserror *Mod_Final(int fatal, int podule_base, void *pw)
 {
   _kernel_oserror *err;
   err = Unregister_Filters(pw);
-  return NULL;
+  return err;
 }
 
 
@@ -166,7 +167,7 @@ _kernel_oserror *border_handler(_kernel_swi_regs *r, void *pw)
         colours_t *cols = (colours_t *)r->r[3];
         unsigned long ditherflags = r->r[4];
         if (border_draw(bordertype,iconflags,box,cols,ditherflags))
-          r->r[9]=-1; /* Claim */
+          r->r[9]=-1;
         return NULL;
       }
       break;
@@ -176,8 +177,7 @@ _kernel_oserror *border_handler(_kernel_swi_regs *r, void *pw)
         int bordertype = r->r[0];
         unsigned long iconflags = r->r[1];
         bbox_t *box = (bbox_t *)r->r[2];
-        if (border_size(bordertype,iconflags,box))
-          r->r[9]=-1; /* Claim */
+        border_size(bordertype,iconflags,box);
         return NULL;
       }
       break;
@@ -190,7 +190,7 @@ _kernel_oserror *border_handler(_kernel_swi_regs *r, void *pw)
         colours_t *cols = (colours_t *)r->r[3];
         unsigned long ditherflags = r->r[4];
         if (border_fill(bordertype,iconflags,box,cols,ditherflags))
-          r->r[9]=-1; /* Claim */
+          r->r[9]=-1;
         return NULL;
       }
       break;
@@ -203,7 +203,7 @@ _kernel_oserror *border_handler(_kernel_swi_regs *r, void *pw)
         colours_t *cols = (colours_t *)r->r[3];
         unsigned long background = r->r[4];
         if (border_colour(bordertype,iconflags,box,cols,background))
-          r->r[9]=-1; /* Claim */
+          r->r[9]=-1;
         return NULL;
       }
       break;
