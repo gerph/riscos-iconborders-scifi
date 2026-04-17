@@ -67,38 +67,33 @@ static void draw_fancy_scifi(int x0, int y0, int x1, int y1, int r, unsigned lon
 {
   unsigned long glow1 = (col >> 1) & 0x7F7F7F00;
   unsigned long glow2 = (col >> 2) & 0x3F3F3F00;
-  unsigned long shadow = 0x66666600; /* Subtle dark grey tech shadow */
   
-  /* Tech shadow for depth separation on grey background */
-  draw_scifi_outline(x0 + 2, y0 - 2, x1 + 2, y1 - 2, r, shadow);
+  /* Inner depth glow (instead of outer shadow) */
+  draw_scifi_outline(x0 + 1, y0 + 1, x1 - 1, y1 - 1, r - 1, glow2);
 
-  /* Outer glow layers */
-  draw_scifi_outline(x0 - 4, y0 - 4, x1 + 4, y1 + 4, r + 2, glow2);
-  draw_scifi_outline(x0 - 2, y0 - 2, x1 + 2, y1 + 2, r + 1, glow1);
+  /* Outer glow layers - very tight to avoid washing out */
+  draw_scifi_outline(x0 - 2, y0 - 2, x1 + 2, y1 + 2, r + 1, glow2);
+  draw_scifi_outline(x0 - 1, y0 - 1, x1 + 1, y1 + 1, r, glow1);
   
   /* Main border */
   draw_scifi_outline(x0, y0, x1, y1, r, col);
   
-  /* Inner detail outline */
-  draw_scifi_outline(x0 + 4, y0 + 4, x1 - 4, y1 - 4, r - 2, glow1);
-
   /* Corner brackets - technical flourishes */
   gcol(col);
   /* Top-left bracket */
-  line(x0 - 8, y1 - r, x0 - 8, y1 + 8); 
-  line(x0 - 8, y1 + 8, x0 + r, y1 + 8);
+  line(x0 - 6, y1 - r, x0 - 6, y1 + 6); 
+  line(x0 - 6, y1 + 6, x0 + r, y1 + 6);
   /* Bottom-right bracket */
-  line(x1 + 8, y0 + r, x1 + 8, y0 - 8);
-  line(x1 + 8, y0 - 8, x1 - r, y0 - 8);
+  line(x1 + 6, y0 + r, x1 + 6, y0 - 6);
+  line(x1 + 6, y0 - 6, x1 - r, y0 - 6);
 
-  /* Micro-details: small "plus" markers */
-  line(x0 + r, y1 + 6, x0 + r, y1 + 10);
-  line(x0 + r - 2, y1 + 8, x0 + r + 2, y1 + 8);
-  
-  line(x1 - r, y0 - 6, x1 - r, y0 - 10);
-  line(x1 - r - 2, y0 - 8, x1 - r + 2, y0 - 8);
+  /* Active indicator dot - makes it look "powered on" */
+  gcol(0xFFFFFF00);
+  point(x0 - 6, y1 + 6);
+  point(x1 + 6, y0 - 6);
 
   /* Side detail bars */
+  gcol(glow1);
   line(x0 - 4, y0 + r + 8, x0 - 4, y1 - r - 8);
   line(x1 + 4, y0 + r + 8, x1 + 4, y1 - r - 8);
 }
@@ -286,12 +281,9 @@ int border_draw(int type, unsigned long flags,
     }
     else
     {
-      unsigned long shadow = 0x66666600;
-      /* Tech shadow for depth separation on grey background */
-      draw_scifi_outline(x0 + 1, y0 - 1, x1 + 1, y1 - 1, r, shadow);
-
+      unsigned long glow1 = (colours[COLOUR_WELL] >> 1) & 0x7F7F7F00;
       draw_scifi_outline(x0, y0, x1, y1, r, colours[COLOUR_WELL]);
-      draw_scifi_outline(x0 + 1, y0 + 1, x1 - 1, y1 - 1, r - 1, (colours[COLOUR_WELL] >> 1) & 0x7F7F7F00);
+      draw_scifi_outline(x0 + 1, y0 + 1, x1 - 1, y1 - 1, r - 1, glow1);
     }
 
     if (flags & (1 << 23))
@@ -375,7 +367,7 @@ int border_colour(int type, unsigned long flags, bbox_t *box,
     cols[COLOUR_WELL] = 0xFFFF0000; /* Pure Neon Cyan (Blue=FF, Green=FF, Red=00) */
     
     /* Mix a dark midnight blue with the window background for a tinted glass effect */
-    cols[COLOUR_BG]   = mix(0x11110000, background, 160);
+    cols[COLOUR_BG]   = mix(0x11110000, background, 200);
     
     cols[COLOUR_FG]   = 0xFFFFFF00; /* White text */
 
