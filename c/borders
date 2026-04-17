@@ -170,12 +170,28 @@ static void fill_scifi_fancy(int x0, int y0, int x1, int y1, int r, unsigned lon
     cur_bg = (next_r << 8) | (next_g << 16) | (next_b << 24);
   }
   
-  /* Scanline effect */
+  /* Diagonal tech hatching */
   gcol((bg >> 1) & 0x7F7F7F00);
-  for (i = y0 + 4; i < y1 - 4; i += 4)
+  for (i = - (y1 - y0); i < (x1 - x0); i += 12)
   {
-    line(x0 + r, i, x1 - r, i);
+    /* Draw lines at 45 degrees within the box */
+    /* line from (x0+i, y0) to (x0+i+(y1-y0), y1) clipped to box */
+    int lx0 = x0 + i;
+    int ly0 = y0;
+    int lx1 = x0 + i + (y1 - y0);
+    int ly1 = y1;
+    
+    /* Clipping to the main button area (roughly) */
+    if (lx0 < x0 + r) { ly0 += (x0 + r - lx0); lx0 = x0 + r; }
+    if (lx1 > x1 - r) { ly1 -= (lx1 - (x1 - r)); lx1 = x1 - r; }
+    
+    if (lx0 < x1 - r && lx1 > x0 + r && ly1 > ly0)
+      line(lx0, ly0, lx1, ly1);
   }
+
+  /* Top Gloss effect */
+  gcol(bright(bg));
+  rect(x0 + r, y1 - 8, x1 - r, y1 - 2);
 }
 
 
