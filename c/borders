@@ -170,6 +170,27 @@ static void fill_scifi_fancy(int x0, int y0, int x1, int y1, int r, unsigned lon
     cur_bg = (next_r << 8) | (next_g << 16) | (next_b << 24);
   }
   
+  /* Top Gloss effect - 4 layers for blending */
+  for (i = 0; i < 4; i++)
+  {
+    unsigned long gloss_col;
+    unsigned long r_off = (4 - i) * 0x10;
+    unsigned long g_off = (4 - i) * 0x18;
+    unsigned long b_off = (4 - i) * 0x18;
+    
+    unsigned long gr = (bg & 0x0000FF00) >> 8;
+    unsigned long gg = (bg & 0x00FF0000) >> 16;
+    unsigned long gb = (bg & 0xFF000000) >> 24;
+    
+    ADD_CLAMP(gr, 0x40 + r_off);
+    ADD_CLAMP(gg, 0x60 + g_off);
+    ADD_CLAMP(gb, 0x60 + b_off);
+    gloss_col = (gr << 8) | (gg << 16) | (gb << 24);
+    
+    gcol(gloss_col);
+    rect(x0 + r, y1 - 2 - (i+1)*2, x1 - r, y1 - 2 - i*2);
+  }
+
   /* Diagonal tech hatching */
   gcol((bg >> 1) & 0x7F7F7F00);
   for (i = - (y1 - y0); i < (x1 - x0); i += 12)
@@ -188,10 +209,6 @@ static void fill_scifi_fancy(int x0, int y0, int x1, int y1, int r, unsigned lon
     if (lx0 < x1 - r && lx1 > x0 + r && ly1 > ly0)
       line(lx0, ly0, lx1, ly1);
   }
-
-  /* Top Gloss effect */
-  gcol(bright(bg));
-  rect(x0 + r, y1 - 8, x1 - r, y1 - 2);
 }
 
 
