@@ -18,6 +18,22 @@
 #define MIN_WIDTH    (80)
 
 /*************************************************** Gerph *********
+ Function:     mix
+ Description:  Mix two colours with a given ratio
+ Parameters:   col1, col2 = colours to mix
+               ratio = 0..256 (256 = all col1)
+ Returns:      mixed colour
+ ******************************************************************/
+static unsigned long mix(unsigned long col1, unsigned long col2, int ratio)
+{
+  unsigned long r, g, b;
+  r = (((col1 & 0x0000FF00) >> 8) * ratio + ((col2 & 0x0000FF00) >> 8) * (256 - ratio)) >> 8;
+  g = (((col1 & 0x00FF0000) >> 16) * ratio + ((col2 & 0x00FF0000) >> 16) * (256 - ratio)) >> 8;
+  b = (((col1 & 0xFF000000) >> 24) * ratio + ((col2 & 0xFF000000) >> 24) * (256 - ratio)) >> 8;
+  return (r << 8) | (g << 16) | (b << 24);
+}
+
+/*************************************************** Gerph *********
  Function:     draw_scifi_outline
  Description:  Draw the outline of a scifi button
  Parameters:   x0,y0,x1,y1 = box
@@ -51,7 +67,11 @@ static void draw_fancy_scifi(int x0, int y0, int x1, int y1, int r, unsigned lon
 {
   unsigned long glow1 = (col >> 1) & 0x7F7F7F00;
   unsigned long glow2 = (col >> 2) & 0x3F3F3F00;
+  unsigned long shadow = 0x66666600; /* Subtle dark grey tech shadow */
   
+  /* Tech shadow for depth separation on grey background */
+  draw_scifi_outline(x0 + 2, y0 - 2, x1 + 2, y1 - 2, r, shadow);
+
   /* Outer glow layers */
   draw_scifi_outline(x0 - 4, y0 - 4, x1 + 4, y1 + 4, r + 2, glow2);
   draw_scifi_outline(x0 - 2, y0 - 2, x1 + 2, y1 + 2, r + 1, glow1);
@@ -135,7 +155,7 @@ static unsigned long bright(unsigned long col)
   g = (col & 0x00FF0000) >> 16;
   b = (col & 0xFF000000) >> 24;
 
-  ADD_CLAMP(r, 0x60);
+  ADD_CLAMP(r, 0x10); /* Keep red low to maintain tech cyan feel */
   ADD_CLAMP(g, 0x60);
   ADD_CLAMP(b, 0x60);
   return (r << 8) | (g << 16) | (b << 24);
@@ -266,6 +286,10 @@ int border_draw(int type, unsigned long flags,
     }
     else
     {
+      unsigned long shadow = 0x66666600;
+      /* Tech shadow for depth separation on grey background */
+      draw_scifi_outline(x0 + 1, y0 - 1, x1 + 1, y1 - 1, r, shadow);
+
       draw_scifi_outline(x0, y0, x1, y1, r, colours[COLOUR_WELL]);
       draw_scifi_outline(x0 + 1, y0 + 1, x1 - 1, y1 - 1, r - 1, (colours[COLOUR_WELL] >> 1) & 0x7F7F7F00);
     }
@@ -349,7 +373,10 @@ int border_colour(int type, unsigned long flags, bbox_t *box,
   {
     /* SciFi style: Neon Cyan border, Dark background (strictly blue/green range) */
     cols[COLOUR_WELL] = 0xFFFF0000; /* Pure Neon Cyan (Blue=FF, Green=FF, Red=00) */
-    cols[COLOUR_BG]   = 0x11110000; /* Deep Midnight Blue/Black */
+    
+    /* Mix a dark midnight blue with the window background for a tinted glass effect */
+    cols[COLOUR_BG]   = mix(0x11110000, background, 160);
+    
     cols[COLOUR_FG]   = 0xFFFFFF00; /* White text */
 
     if (flags & (1 << 21))
