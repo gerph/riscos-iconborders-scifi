@@ -39,7 +39,7 @@ static void draw_scifi_outline(int x0, int y0, int x1, int y1, int r, unsigned l
 
 /*************************************************** Gerph *********
  Function:     draw_fancy_scifi
- Description:  Draw a fancy scifi button with glow and brackets
+ Description:  Draw a fancy scifi button with glow and flourishes
  Parameters:   x0,y0,x1,y1 = box
                r = corner radius
                col = colour
@@ -47,26 +47,38 @@ static void draw_scifi_outline(int x0, int y0, int x1, int y1, int r, unsigned l
  ******************************************************************/
 static void draw_fancy_scifi(int x0, int y0, int x1, int y1, int r, unsigned long col)
 {
-  unsigned long glow = (col >> 1) & 0x7F7F7F00;
+  unsigned long glow1 = (col >> 1) & 0x7F7F7F00;
+  unsigned long glow2 = (col >> 2) & 0x3F3F3F00;
   
-  /* Outer glow */
-  draw_scifi_outline(x0 - 2, y0 - 2, x1 + 2, y1 + 2, r + 1, glow);
+  /* Outer glow layers */
+  draw_scifi_outline(x0 - 4, y0 - 4, x1 + 4, y1 + 4, r + 2, glow2);
+  draw_scifi_outline(x0 - 2, y0 - 2, x1 + 2, y1 + 2, r + 1, glow1);
   
   /* Main border */
   draw_scifi_outline(x0, y0, x1, y1, r, col);
   
-  /* Inner glow */
-  draw_scifi_outline(x0 + 2, y0 + 2, x1 - 2, y1 - 2, r - 1, glow);
+  /* Inner detail outline */
+  draw_scifi_outline(x0 + 4, y0 + 4, x1 - 4, y1 - 4, r - 2, glow1);
 
-  /* Corner brackets - just top-left and bottom-right for sci-fi asymmetry */
+  /* Corner brackets - technical flourishes */
   gcol(col);
-  line(x0 - 4, y1 - r - 8, x0 - 4, y1 - r + 4); 
-  line(x0 - 4, y1 - r + 4, x0 + r - 4, y1 + 4);
-  line(x0 + r - 4, y1 + 4, x0 + r + 8, y1 + 4);
+  /* Top-left bracket */
+  line(x0 - 8, y1 - r, x0 - 8, y1 + 8); 
+  line(x0 - 8, y1 + 8, x0 + r, y1 + 8);
+  /* Bottom-right bracket */
+  line(x1 + 8, y0 + r, x1 + 8, y0 - 8);
+  line(x1 + 8, y0 - 8, x1 - r, y0 - 8);
 
-  line(x1 + 4, y0 + r + 8, x1 + 4, y0 + r - 4);
-  line(x1 + 4, y0 + r - 4, x1 - r + 4, y0 - 4);
-  line(x1 - r + 4, y0 - 4, x1 - r - 8, y0 - 4);
+  /* Micro-details: small "plus" markers */
+  line(x0 + r, y1 + 6, x0 + r, y1 + 10);
+  line(x0 + r - 2, y1 + 8, x0 + r + 2, y1 + 8);
+  
+  line(x1 - r, y0 - 6, x1 - r, y0 - 10);
+  line(x1 - r - 2, y0 - 8, x1 - r + 2, y0 - 8);
+
+  /* Side detail bars */
+  line(x0 - 4, y0 + r + 8, x0 - 4, y1 - r - 8);
+  line(x1 + 4, y0 + r + 8, x1 + 4, y1 - r - 8);
 }
 
 /*************************************************** Gerph *********
@@ -78,6 +90,8 @@ static void draw_fancy_scifi(int x0, int y0, int x1, int y1, int r, unsigned lon
  ******************************************************************/
 static void fill_scifi_core(int x0, int y0, int x1, int y1, int r)
 {
+  if (x1 <= x0 || y1 <= y0) return;
+
   /* Central rectangle */
   rect(x0 + r, y0, x1 - r, y1);
   /* Left side */
@@ -120,7 +134,7 @@ static unsigned long bright(unsigned long col)
   b = (col & 0xFF000000) >> 24;
 
 #define ADD_CLAMP(var, by) var += by; if (var>255) var=255;
-  ADD_CLAMP(r, 0x60);
+  ADD_CLAMP(r, 0x40);
   ADD_CLAMP(g, 0x60);
   ADD_CLAMP(b, 0x60);
   return (r << 8) | (g << 16) | (b << 24);
@@ -128,7 +142,7 @@ static unsigned long bright(unsigned long col)
 
 /*************************************************** Gerph *********
  Function:     fill_scifi_fancy
- Description:  Fill a scifi button with banded gradient effect
+ Description:  Fill a scifi button with fading gradient and scanlines
  Parameters:   x0,y0,x1,y1 = box
                r = corner radius
                bg = background colour
@@ -136,21 +150,34 @@ static unsigned long bright(unsigned long col)
  ******************************************************************/
 static void fill_scifi_fancy(int x0, int y0, int x1, int y1, int r, unsigned long bg)
 {
-  unsigned long bg_light = bright(bg);
-  unsigned long bg_dark = (bg >> 1) & 0x7F7F7F00;
+  int i;
+  unsigned long cur_bg = bg;
   
-  /* Base */
-  gcol(bg);
-  fill_scifi_core(x0, y0, x1, y1, r);
+  /* Draw concentric layers to simulate a fade from dark edges to lighter center */
+  for (i = 0; i < 6; i++)
+  {
+    unsigned long next_r, next_g, next_b;
+    gcol(cur_bg);
+    fill_scifi_core(x0 + i, y0 + i, x1 - i, y1 - i, r - i > 0 ? r - i : 0);
+    
+    /* Subtle brightening for the next layer - primarily Cyan */
+    next_r = (cur_bg & 0x0000FF00) >> 8;
+    next_g = (cur_bg & 0x00FF0000) >> 16;
+    next_b = (cur_bg & 0xFF000000) >> 24;
+    next_r = (next_r + 2 > 255) ? 255 : next_r + 2;
+    next_g = (next_g + 8 > 255) ? 255 : next_g + 8;
+    next_b = (next_b + 8 > 255) ? 255 : next_b + 8;
+    cur_bg = (next_r << 8) | (next_g << 16) | (next_b << 24);
+  }
   
-  /* Top band */
-  gcol(bg_light);
-  rect(x0 + r, y1 - 4, x1 - r, y1 - 1);
-  
-  /* Bottom band */
-  gcol(bg_dark);
-  rect(x0 + r, y0 + 1, x1 - r, y0 + 4);
+  /* Scanline effect */
+  gcol((bg >> 1) & 0x7F7F7F00);
+  for (i = y0 + 4; i < y1 - 4; i += 4)
+  {
+    line(x0 + r, i, x1 - r, i);
+  }
 }
+
 
 /*************************************************** Gerph *********
  Function:     border_draw
@@ -278,23 +305,23 @@ int border_colour(int type, unsigned long flags, bbox_t *box,
 {
   if ((type == 5 || type == 6) && box->x1 - box->x0 > MIN_WIDTH)
   {
-    /* SciFi style: Neon Cyan border, Dark background */
-    cols[COLOUR_WELL] = 0xEEEE0000; /* Bright Neon Cyan */
-    cols[COLOUR_BG]   = 0x33111100; /* Very Dark Blue-Grey */
+    /* SciFi style: Neon Cyan border, Dark background (strictly blue/green range) */
+    cols[COLOUR_WELL] = 0xFFFF0000; /* Pure Neon Cyan (Blue=FF, Green=FF, Red=00) */
+    cols[COLOUR_BG]   = 0x11110000; /* Deep Midnight Blue/Black */
     cols[COLOUR_FG]   = 0xFFFFFF00; /* White text */
 
     if (flags & (1 << 21))
     {
       /* Selected state: Glowing cyan background */
       cols[COLOUR_WELL] = 0xFFFFFF00; /* White border for high contrast */
-      cols[COLOUR_BG]   = 0xAA666600; /* Glowing cyan-ish background */
+      cols[COLOUR_BG]   = 0xCCAA0000; /* Vibrant Cyan-blue background */
       cols[COLOUR_FG]   = 0x00000000; /* Black text */
     }
 
     if (flags & (1 << 23))
     {
-      /* Highlighted state: even brighter */
-      cols[COLOUR_WELL] = 0xFFFF0000; /* Maximum Neon Cyan */
+      /* Highlighted state: even brighter border */
+      cols[COLOUR_WELL] = 0xFFFF2200; /* Slightly lighter neon cyan */
       cols[COLOUR_BG]   = bright(cols[COLOUR_BG]);
     }
 
@@ -302,6 +329,7 @@ int border_colour(int type, unsigned long flags, bbox_t *box,
   }
   return 0;
 }
+
 
 
 /*************************************************** Gerph *********
