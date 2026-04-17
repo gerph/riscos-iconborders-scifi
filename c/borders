@@ -10,6 +10,8 @@
 #include "borders.h"
 #include "graphics.h"
 
+#define ADD_CLAMP(var, by) { unsigned long _by = (by); var += _by; if (var>255) var=255; }
+
 #define SCI_FI_R     (12)
 #define BORDER_WIDTH (2)
 #define BORDER_INSET (6)
@@ -133,8 +135,7 @@ static unsigned long bright(unsigned long col)
   g = (col & 0x00FF0000) >> 16;
   b = (col & 0xFF000000) >> 24;
 
-#define ADD_CLAMP(var, by) var += by; if (var>255) var=255;
-  ADD_CLAMP(r, 0x40);
+  ADD_CLAMP(r, 0x60);
   ADD_CLAMP(g, 0x60);
   ADD_CLAMP(b, 0x60);
   return (r << 8) | (g << 16) | (b << 24);
@@ -142,15 +143,18 @@ static unsigned long bright(unsigned long col)
 
 /*************************************************** Gerph *********
  Function:     fill_scifi_fancy
- Description:  Fill a scifi button with fading gradient and scanlines
+ Description:  Fill a scifi button with fading gradient and hatching
  Parameters:   x0,y0,x1,y1 = box
                r = corner radius
                bg = background colour
+               mind = pixel size
  Returns:      none
  ******************************************************************/
-static void fill_scifi_fancy(int x0, int y0, int x1, int y1, int r, unsigned long bg)
+static void fill_scifi_fancy(int x0, int y0, int x1, int y1, int r, unsigned long bg, int mind)
 {
   int i;
+  int grid = 12;
+  int delta;
   unsigned long cur_bg = bg;
   
   /* Draw concentric layers to simulate a fade from dark edges to lighter center */
@@ -174,33 +178,35 @@ static void fill_scifi_fancy(int x0, int y0, int x1, int y1, int r, unsigned lon
   for (i = 0; i < 4; i++)
   {
     unsigned long gloss_col;
-    unsigned long r_off = (4 - i) * 0x10;
-    unsigned long g_off = (4 - i) * 0x18;
-    unsigned long b_off = (4 - i) * 0x18;
-    
     unsigned long gr = (bg & 0x0000FF00) >> 8;
     unsigned long gg = (bg & 0x00FF0000) >> 16;
     unsigned long gb = (bg & 0xFF000000) >> 24;
+    int strength = (4 - i) * 24;
+    int ty1, ty0;
     
-    ADD_CLAMP(gr, 0x40 + r_off);
-    ADD_CLAMP(gg, 0x60 + g_off);
-    ADD_CLAMP(gb, 0x60 + b_off);
+    /* Stronger at top, fading down */
+    ADD_CLAMP(gr, strength);
+    ADD_CLAMP(gg, strength + 32);
+    ADD_CLAMP(gb, strength + 32);
     gloss_col = (gr << 8) | (gg << 16) | (gb << 24);
     
     gcol(gloss_col);
-    rect(x0 + r, y1 - 2 - (i+1)*2, x1 - r, y1 - 2 - i*2);
+    /* y1+1 is the original snapped top. mind is pixel size. */
+    ty1 = (y1 + 1) - i * mind - 1;
+    ty0 = ty1 - (mind - 1);
+    rect(x0 + r, ty0, x1 - r, ty1);
   }
 
   /* Diagonal tech hatching */
   gcol((bg >> 1) & 0x7F7F7F00);
-  for (i = - (y1 - y0); i < (x1 - x0); i += 12)
+  delta = (y1 - y0);
+  delta &= ~(mind - 1); /* Perfect 45 degree slope for pixel ratio */
+  for (i = - delta; i < (x1 - x0); i += grid)
   {
-    /* Draw lines at 45 degrees within the box */
-    /* line from (x0+i, y0) to (x0+i+(y1-y0), y1) clipped to box */
     int lx0 = x0 + i;
     int ly0 = y0;
-    int lx1 = x0 + i + (y1 - y0);
-    int ly1 = y1;
+    int lx1 = lx0 + delta;
+    int ly1 = ly0 + delta;
     
     /* Clipping to the main button area (roughly) */
     if (lx0 < x0 + r) { ly0 += (x0 + r - lx0); lx0 = x0 + r; }
@@ -210,6 +216,7 @@ static void fill_scifi_fancy(int x0, int y0, int x1, int y1, int r, unsigned lon
       line(lx0, ly0, lx1, ly1);
   }
 }
+
 
 
 /*************************************************** Gerph *********
@@ -292,6 +299,7 @@ int border_fill(int type, unsigned long flags, bbox_t *box,
   {
     int x0, y0, x1, y1;
     int r = SCI_FI_R;
+    int mind = (box->dx < box->dy) ? box->dx : box->dy;
 
     /* Snapcoords */
     x0 = box->x0 & ~box->dx_1;
@@ -315,11 +323,12 @@ int border_fill(int type, unsigned long flags, bbox_t *box,
       y0 -= 2; y1 -= 2;
     }
 
-    fill_scifi_fancy(x0, y0, x1, y1, r, colours[COLOUR_BG]);
+    fill_scifi_fancy(x0, y0, x1, y1, r, colours[COLOUR_BG], mind);
     return 1;
   }
   return 0;
 }
+
 
 
 
