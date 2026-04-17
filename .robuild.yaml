@@ -26,6 +26,16 @@ jobs:
     # The build will terminate if any command returns a non-0 return code or an error.
     script:
 
+      # Build the test program
+      - echo
+      - echo *** Build test program (32-bit) ***
+      - amu -f MakefileApp
+
+      # Insert any testing here...
+      - echo
+      - echo *** Test that the module works ***
+      - aif32.IconBorderSciFi -save-native
+
       # Export our headers and libraries
       - echo
       - echo *** Export the headers or libs ***
@@ -54,11 +64,6 @@ jobs:
       - echo *** Load the module ***
       - RMLoad rm32.IconBorderSciFi
 
-      # Insert any testing here...
-      - echo
-      - echo *** Test that the module works ***
-      - aif.IconBorderSciFi -save-native
-
       - echo
       - echo *** Kill the module ***
       - RMKill IconBorderSciFi
@@ -66,6 +71,7 @@ jobs:
       # Construct the artifacts to release
       - echo *** Copy artifacts ***
       - cdir Artifacts
+      - copy aif32 Artifacts.* ~CVR
       - copy rm32 Artifacts.* ~CVR
       - copy rm Artifacts.* ~CVR
       - copy aof32 Artifacts.* ~CVR
