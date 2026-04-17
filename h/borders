@@ -9,9 +9,9 @@
 #define BORDERS_H
 
 typedef struct bbox_s {
-  int x0,y0,x1,y1;
-  int dx,dy;
-  int dx_1,dy_1;
+  int x0,y0,x1,y1; /* Coordinates in OS units */
+  int dx,dy; /* Size of a single pixel in each dimension */
+  int dx_1,dy_1; /* Size of a single pixel in each dimension, minus 1 */
 } bbox_t;
 
 typedef unsigned long colours_t;
